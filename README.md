@@ -876,3 +876,104 @@ Changes not staged for commit:
 
 no changes added to commit (use "git add" and/or "git commit -a")
 ```
+
+## Откатиться в истории назад или "если что-то сломалось"
+
+На разных этапах работы с Git могут происходить похожие ситуации:
+- В список на коммит попал лишний файл (например, временный). Нужно «вынуть» его из списка.
+```bash
+$ touch example.txt # создали ненужный файл
+$ git add example.txt # ошибочно добавили его в staged
+$ git status
+On branch master
+
+No commits yet
+
+Changes to be committed:
+  (use "git rm --cached <file>..." to unstage)
+  # у яндекса use "git restore --staged <file>..." to unstage
+        new file:   example.txt
+
+$ git rm --cached example.txt
+rm 'example.txt'
+
+$ ls -la
+total 12
+-rw-r--r-- 1 grine 197121 0 авг 31 13:08 example.txt
+
+$ git status
+On branch master
+
+No commits yet
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        example.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+# файл example.txt из staged вернулся обратно в untracked
+```
+
+Чтобы «сбросить» все файлы из `staged` обратно в `untracked`/`modified`, можно воспользоваться командой `git restore --staged .`: она сбросит всю текущую папку (`.`).
+
+- Последние несколько коммитов ошибочные: например, сделали не то, что было нужно, или нарушили логику. Хочется «откатить» сразу несколько коммитов, вернуть «как было вчера».
+```bash
+$ git log --oneline
+ae96294 (HEAD -> master) delete file1.txt and file2.css # неудачный коммит
+490f7b7 add file2.css and file3.html
+228a6be add file1.txt
+
+$ git reset --hard 490f7b7 # откатываем состояние репозитория
+HEAD is now at 490f7b7 add file2.css and file3.html
+
+$ ls -l                    # все файлы на месте
+total 0
+-rw-r--r-- 1 grine 197121 0 авг 31 13:35 file1.txt
+-rw-r--r-- 1 grine 197121 0 авг 31 13:35 file2.css
+-rw-r--r-- 1 grine 197121 0 авг 31 13:32 file3.html
+
+$ git log --oneline
+# коммит `ae96294` Git просто удалил.
+490f7b7 (HEAD -> master) add file2.css and file3.html
+228a6be add file1.txt
+```
+
+> [!ATTENTION]
+> Будьте осторожны с командой `git reset --hard`! При удалении коммитов можно потерять что-то нужное.
+
+- Случайно изменился файл, который вообще не должен был меняться. Например, вы открыли не тот файл в редакторе и начали его исправлять.
+```bash
+$ ls
+forever_empty.txt
+
+$ git status
+On branch master
+nothing to commit, working tree clean
+
+$ nano forever_empty.txt # все-таки случайно файл изменили :(
+
+$ git status
+On branch master
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   forever_empty.txt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+$ cat forever_empty.txt
+some data                # о нет, вечно пустой файл не пуст!
+
+$ git restore forever_empty.txt
+
+$ cat forever_empty.txt  # ура, вернулось прежнее содержимое файла (пустой файл)
+
+$ git status
+On branch master
+nothing to commit, working tree clean
+```
+
+> [!NOTE] Резюме
+> - Команда `git restore --staged <file>` переведёт файл из `staged` обратно в `modified` или `untracked` (короче: уберет файл из списка на коммит).
+> - Команда `git reset --hard <commit hash>` «откатит» историю до коммита с хешем `<hash>`. Более поздние коммиты потеряются (коротко: выручит, когда уже накоммитил)!
+> - Команда `git restore <file>` «откатит» изменения в файле до последней сохранённой (в коммите `git commit` или в staging `git add`) версии (коротко: выручит вас, если нужно откатить изменения, которые ещё не попали ни в staging area, ни в коммит).
