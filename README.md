@@ -1715,6 +1715,108 @@ Deleted branch feature/diff (was f30d441).
 
 Подробнее о разрешении конфликтов можно узнать дальше в руководстве или [из официальной документации Git](https://git-scm.com/book/ru/v2/%D0%98%D0%BD%D1%81%D1%82%D1%80%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B-Git-%D0%9F%D1%80%D0%BE%D0%B4%D0%B2%D0%B8%D0%BD%D1%83%D1%82%D0%BE%D0%B5-%D1%81%D0%BB%D0%B8%D1%8F%D0%BD%D0%B8%D0%B5).
 
+## Работа с ветками в удаленном репозитории
+
+Допустим, вы закончили работу над задачей в локальной ветке. Теперь хотите, чтобы эти изменения попали в основную ветку проекта и чтобы коллеги увидели результат вашей работы. Для этого вам нужно снова переместиться на GitHub.
+
+Обычно в основной ветке на GitHub хранится актуальная версия проекта. Как правило, изменения сначала загружают в новую ветку и лишь потом вливают эту ветку в основную. Так коллеги смогут оценить ваши правки до того, как те попадут в главную ветку.
+
+Рассмотрим, как загрузить локальную ветку в удалённый репозиторий.
+
+## Отправить локальную ветку в удалённый репозиторий: `git push`
+
+Создайте на GitHub репозиторий с именем `git-branches` — в него вы загрузите локальный проект `git-branches` из предыдущих уроков. Сделайте его приватным, README.md можно не создавать.
+
+Привяжем удаленный репозиторий к локальному. В качестве параметров указываются имя удалённого репозитория (`origin`) и его URL:
+```bash
+$ git remote add origin git@github.com:ngenuine/git-branches.git
+```
+
+Убедитесь, что находитесь в основной ветке, и выполните команду `git push` с флагом `-u`, который свяжет локальную ветку с удалённой. Также команде нужно передать параметры `origin` и имя текущей ветки.
+```bash
+$ git branch
+  bugfix/fix-branch
+  feature/add-branch-info
+* master
+
+$ git push -u origin master
+```
+
+Отлично! Теперь основная ветка появится на GitHub. Примерно так будет выглядеть репозиторий:
+```bash
+README.md                    Добавить git diff в README                13 minutes ago
+
+README.md
+
+Урок: Ветки в Git
+
+Чтобы посмотреть все активные ветки в проекте, нужно вызвать команду `git branch` без аргументов.
+
+Для сравнения веток есть команда `git diff`.
+```
+
+Теперь убедитесь, что вы находитесь в основной ветке. Если нет, перейдите в неё через `git checkout main`, а затем создайте новую ветку `feature/merge-request`. Откройте файл `README.md` и добавьте туда строку о команде `git merge`.
+```bash
+$ git checkout master
+Already on 'master'
+Your branch is up to date with 'origin/master'.
+
+$ git checkout -b feature/merge-request
+
+$ git branch
+  bugfix/fix-branch
+  feature/add-branch-info
+* feature/merge-request
+  master
+
+$ nano README.md # вносим изменения
+$ cat README.md
+Урок: Ветки в Git
+
+Чтобы посмотреть все активные ветки в проекте, нужно вызвать команду `git branch` без аргументов.
+
+Для сравнения веток есть команда `git diff`.
+
+С помощью команды `git merge` можно слить две ветки в одну. # <--- новая строка
+
+# добавляем изменения в staging area и делаем коммит с сообщением
+$ git add . && git commit -m "Добавить merge в README"
+```
+
+Чтобы отправить `feature/merge-request` в удалённый репозиторий, необходимо ещё раз выполнить команду `push`.
+
+> [!attention]
+> Обратите внимание: теперь необязательно переходить в ветку, чтобы запушить её.
+
+```bash
+$ git push -u origin feature/merge-request
+Enumerating objects: 5, done.
+Counting objects: 100% (5/5), done.
+Delta compression using up to 12 threads
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (3/3), 403 bytes | 403.00 KiB/s, done.
+Total 3 (delta 1), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (1/1), completed with 1 local object.
+remote:
+remote: Create a pull request for 'feature/merge-request' on GitHub by visiting:
+remote:      https://github.com/ngenuine/git-branches/pull/new/feature/merge-request
+remote:
+To github.com:ngenuine/git-branches.git
+ * [new branch]      feature/merge-request -> feature/merge-request
+branch 'feature/merge-request' set up to track 'origin/feature/merge-request'.
+```
+
+Это сообщение состоит из трёх частей:
+- `Total 0 (delta 0), reused 0 (delta 0), pack-reused 0` — говорит, сколько файлов было загружено. Обычно эта информация не имеет особого значения.
+- `Create a pull request for 'feature/merge-request' on GitHub by visiting:` — предоставляет ссылку, чтобы быстро создать запрос на изменения. Подробнее о таких запросах расскажем в далее.
+- `* [new branch] feature/merge-request -> feature/merge-request` — показывает, что в результате операции в удалённом репозитории была создана новая ветка `feature/merge-request`, на которую теперь ссылается локальная ветка `feature/merge-request`.
+
+Откройте GitHub и обновите страницу. После добавления новой ветки произойдёт два события:
+- вместо `1 branch` (англ. «одна ветка») станет `2 branches` (англ. «две ветки»);
+- по клику на список веток теперь можно перейти в ветку `feature/merge-request`.
+
+Готово! Теперь вы знаете, как загрузить любую ветку в удалённый репозиторий.
+
 ## Шпаргалка
 
 ### Инициализация репозитория
